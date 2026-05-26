@@ -69,5 +69,67 @@ def add_transaction(t_type: str, amount: float, cat_id: int, date: str):
         conn.close()
 
 # Keep this execution block at the absolute bottom
+from database import init_db, add_category, add_transaction, get_budget_report, InvalidTransactionError
+
+def main():
+    init_db()
+    
+    while True:
+        print("\n--- Expense Tracker / Budget Manager ---")
+        print("1. Add Category")
+        print("2. Add Transaction")
+        print("3. View Budget Report & Alerts")
+        print("4. Exit")
+        choice = input("Select an option: ")
+
+        try:
+            if choice == "1":
+                name = input("Enter category name (e.g., Food, Utilities): ")
+                limit = float(input("Enter monthly budget limit: "))
+                add_category(name, limit)
+                print("Category added successfully!")
+                
+            elif choice == "2":
+                t_type = input("Type (Income/Expense): ").capitalize()
+                amount = float(input("Enter amount: "))
+                cat_id = int(input("Enter Category ID: "))
+                date = input("Enter date (YYYY-MM-DD): ")
+                
+                add_transaction(t_type, amount, cat_id, date)
+                print("Transaction recorded successfully!")
+                
+            elif choice == "3":
+                print("\n--- MONTHLY BUDGET REPORT ---")
+                report = get_budget_report()
+                if not report:
+                    print("No data available.")
+                for row in report:
+                    cat_name, limit, total_spent = row
+                    print(f"\nCategory: {cat_name}")
+                    print(f"  Budget Limit: ${limit:.2f}")
+                    print(f"  Total Spent:  ${total_spent:.2f}")
+                    
+                    # Core Feature: Set budget limits with alerts
+                    if total_spent > limit and limit > 0:
+                        print(f"  ⚠️ ALERT: You have exceeded your budget for {cat_name} by ${total_spent - limit:.2f}!")
+                    elif total_spent >= limit * 0.8 and limit > 0:
+                        print(f"  ⚠️ WARNING: You have used {total_spent/limit*100:.1f}% of your {cat_name} budget.")
+                    else:
+                        print("  ✅ Status: Within Budget")
+                print("-----------------------------")
+                
+            elif choice == "4":
+                print("Goodbye!")
+                break
+            else:
+                print("Invalid option. Please try again.")
+                
+        except ValueError:
+            print("Error: Please enter a valid number for amounts or IDs.")
+        except InvalidTransactionError as e:
+            print(f"Validation Error: {e}")
+
+if __name__ == "__main__":
+    main()
 if __name__ == "__main__":
     init_db()
