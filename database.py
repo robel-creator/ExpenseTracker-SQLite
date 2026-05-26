@@ -2,6 +2,10 @@ import sqlite3
 
 DB_NAME = "budget_tracker.db"
 
+class InvalidTransactionError(Exception):
+    """Custom exception for business logic validation."""
+    pass
+
 def get_connection():
     """Handles database connection properly with error handling."""
     try:
@@ -38,5 +42,32 @@ def init_db():
         conn.commit()
         conn.close()
 
+def add_category(name: str, limit: float):
+    conn = get_connection()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO categories (name, budget_limit) VALUES (?, ?)", (name, limit))
+            conn.commit()
+        except sqlite3.IntegrityError:
+            print(f"Category '{name}' already exists.")
+        finally:
+            conn.close()
+
+def add_transaction(t_type: str, amount: float, cat_id: int, date: str):
+    if amount <= 0:
+        raise InvalidTransactionError("Transaction amount must be positive.")
+        
+    conn = get_connection()
+    if conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO transactions (type, amount, category_id, date) VALUES (?, ?, ?, ?)",
+            (t_type, amount, cat_id, date)
+        )
+        conn.commit()
+        conn.close()
+
+# Keep this execution block at the absolute bottom
 if __name__ == "__main__":
     init_db()
